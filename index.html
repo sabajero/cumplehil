@@ -288,6 +288,12 @@
 </head>
 <body>
 
+    <!-- AUDIO ELEMENT (HIDDEN) -->
+    <!-- Put your MP3 file in the public folder and name it 'song.mp3' -->
+    <audio id="bg-music" loop>
+        <source src="./public/song.mp3" type="audio/mpeg">
+    </audio>
+
     <!-- STATE WRAPPER -->
     <div id="app-wrapper">
 
@@ -361,6 +367,7 @@
             // --- FIREBASE INIT ---
             const hasInjectedConfig = typeof window.__firebase_config !== 'undefined' && window.__firebase_config;
             
+            // Your real config is now used as the fallback when NOT in preview
             const firebaseConfig = hasInjectedConfig ? JSON.parse(window.__firebase_config) : {
                apiKey: "AIzaSyDu0R7l4Qy06yYv3uQFb0FmBbcEXbOITBA",
                 authDomain: "felizcumplehil.firebaseapp.com",
@@ -377,16 +384,16 @@
             
             const appId = (typeof window.__app_id !== 'undefined') ? window.__app_id : 'default-birthday-app';
 
-            if (hasInjectedConfig) {
-                signInAnonymously(auth).then(() => {
-                    // Start listening for messages only after auth
-                    initMessagesListener();
-                }).catch((err) => {
-                    console.warn("Auth failed (expected if local/preview):", err);
-                });
-            } else {
-                console.log("Running in offline/demo mode (No Firebase Config detected)");
-            }
+            // IMPORTANT FIX: 
+            // We removed the "if (hasInjectedConfig)" check.
+            // Now it attempts to connect EVERYWHERE (Preview, GitHub, Local).
+            signInAnonymously(auth).then(() => {
+                console.log("Connected to database!");
+                // Start listening for messages only after auth
+                initMessagesListener();
+            }).catch((err) => {
+                console.warn("Auth failed (This might happen if the project is new or rules block anon):", err);
+            });
 
             // --- ORBIT SYSTEM SETUP ---
             function setupOrbitSystem() {
@@ -476,6 +483,7 @@
             const input = document.getElementById('wish-input');
             const submitBtn = document.getElementById('submit-btn');
             const successMsg = document.getElementById('success-msg');
+            const bgMusic = document.getElementById('bg-music'); // AUDIO ELEMENT
             
             // New Elements
             const readBtn = document.getElementById('read-trigger');
@@ -485,12 +493,20 @@
             if (landing && wrapper) {
                 landing.addEventListener('click', () => {
                     wrapper.classList.add('view-active');
+                    // Play music on enter
+                    if(bgMusic) {
+                        bgMusic.play().catch(e => console.log("Audio play failed (interaction needed):", e));
+                    }
                 });
             }
 
             if (backBtn && wrapper) {
                 backBtn.addEventListener('click', () => {
                     wrapper.classList.remove('view-active');
+                    // Pause music on exit
+                    if(bgMusic) {
+                        bgMusic.pause();
+                    }
                 });
             }
             
