@@ -56,7 +56,7 @@
 
         /* The Illustration (Landing) */
         #landing-illustration {
-            width: 200px; /* Adjust based on your PNG */
+            width: 400px; /* Adjust based on your PNG */
             height: auto;
             transition: transform 0.3s ease;
         }
@@ -102,12 +102,13 @@
 
         /* --- CENTRAL PULSING IMAGE --- */
         #center-image {
-            width: 180px; /* Adjust size */
-            height: 180px;
+            width: 380px; /* Adjust size */
+            height: 380px;
             object-fit: contain;
             z-index: 20;
             /* Pulse Animation */
             animation: pulse-center 3s ease-in-out infinite;
+            cursor: pointer; /* Changed to pointer to indicate clickability */
         }
 
         @keyframes pulse-center {
@@ -133,8 +134,8 @@
             top: 0; /* Pins item to top of the ring */
             left: 50%;
             transform: translate(-50%, -50%);
-            width: 70px; /* Size of floating drawings */
-            height: 70px;
+            width: 120px; /* Size of floating drawings */
+            height: 120px;
         }
 
         .orbit-item img {
@@ -183,7 +184,7 @@
         .minimal-input {
             width: 100%;
             border: none;
-            border-bottom: 1px solid #000;
+            border-bottom: 1px solid #93cd69;
             font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
             font-size: 16px;
             padding: 10px 0;
@@ -289,9 +290,9 @@
 <body>
 
     <!-- AUDIO ELEMENT (HIDDEN) -->
-    <!-- Put your MP3 file in the public folder and name it 'song.mp3' -->
+    <!-- Put your MP3 file in the public folder and name it 'bendiga.mp3' -->
     <audio id="bg-music" loop>
-        <source src="./public/song.mp3" type="audio/mpeg">
+        <source src="./public/bendiga.mp3" type="audio/mpeg">
     </audio>
 
     <!-- STATE WRAPPER -->
@@ -301,7 +302,7 @@
         <div id="landing-view">
             <!-- Updated to ./public/ for safety -->
             <img id="landing-illustration" src="./public/cora1.png" alt="Surprise">
-            <div class="landing-text">Feliz Cumpleeee</div>
+            <div class="landing-text"></div>
         </div>
 
         <!-- 2. MAIN PAGE -->
@@ -322,13 +323,13 @@
                     
                     <form id="wish-form">
                         <input type="text" id="wish-input" class="minimal-input" placeholder="Type here..." required autocomplete="off">
-                        <button type="submit" id="submit-btn" class="submit-btn">Save</button>
+                        <button type="submit" id="submit-btn" class="submit-btn">enviarrr</button>
                     </form>
                     
                     <!-- NEW READ BUTTON -->
-                    <div id="read-trigger" class="read-btn">Read Messages</div>
+                    <div id="read-trigger" class="read-btn">mensajitos</div>
                     
-                    <div id="success-msg" style="display:none; font-size: 12px; margin-top:10px;">Saved.</div>
+                    <div id="success-msg" style="display:none; font-size: 12px; margin-top:10px;">procesando</div>
                 </div>
             </div>
         </div>
@@ -361,6 +362,7 @@
                     "./public/cat1.png",
                     "./public/dog4.png",
                     "./public/dog5.png",
+                    
                 ]
             };
 
@@ -484,6 +486,7 @@
             const submitBtn = document.getElementById('submit-btn');
             const successMsg = document.getElementById('success-msg');
             const bgMusic = document.getElementById('bg-music'); // AUDIO ELEMENT
+            const centerImage = document.getElementById('center-image'); // CENTER IMAGE ELEMENT
             
             // New Elements
             const readBtn = document.getElementById('read-trigger');
@@ -507,6 +510,14 @@
                     if(bgMusic) {
                         bgMusic.pause();
                     }
+                });
+            }
+            
+            // Replay music on center image click
+            if (centerImage && bgMusic) {
+                centerImage.addEventListener('click', () => {
+                    bgMusic.currentTime = 0; // Restart track
+                    bgMusic.play().catch(e => console.log("Audio play failed:", e));
                 });
             }
             
