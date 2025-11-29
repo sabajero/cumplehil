@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>25</title>
+    
+    <!-- Tailwind CSS (Utility) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js"></script>
+
+    <style>
+        :root {
+            --bg-color: #ffffff;
+            --text-color: #000000;
+        }
+
+        body {
+            margin: 0;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+            font-weight: 400;
+            overflow: hidden; /* Prevent scroll */
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* --- UTILITIES --- */
+        .absolute-center {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        /* --- LANDING PAGE --- */
+        #landing-view {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 50;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: var(--bg-color);
+            transition: transform 1.2s cubic-bezier(0.19, 1, 0.22, 1), opacity 0.8s ease;
+            cursor: pointer;
+        }
+
+        /* The Illustration (Landing) */
+        #landing-illustration {
+            width: 200px; /* Adjust based on your PNG */
+            height: auto;
+            transition: transform 0.3s ease;
+        }
+        
+        #landing-view:active #landing-illustration {
+            transform: scale(0.95);
+        }
+
+        .landing-text {
+            margin-top: 40px;
+            font-size: 14px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            opacity: 0.5;
+        }
+
+        /* --- MAIN VIEW --- */
+        #main-view {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 10;
+            opacity: 0;
+            pointer-events: none;
+            transform: scale(0.9);
+            transition: opacity 1s ease, transform 1.2s cubic-bezier(0.19, 1, 0.22, 1);
+        }
+
+        /* ACTIVE STATES (Controlled by JS) */
+        .view-active #landing-view {
+            transform: scale(5); /* Massive zoom out */
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .view-active #main-view {
+            opacity: 1;
+            transform: scale(1);
+            pointer-events: auto;
+        }
+
+        /* --- CENTRAL PULSING IMAGE --- */
+        #center-image {
+            width: 180px; /* Adjust size */
+            height: 180px;
+            object-fit: contain;
+            z-index: 20;
+            /* Pulse Animation */
+            animation: pulse-center 3s ease-in-out infinite;
+        }
+
+        @keyframes pulse-center {
+            0% { transform: translate(-50%, -50%) scale(1); }
+            50% { transform: translate(-50%, -50%) scale(1.05); }
+            100% { transform: translate(-50%, -50%) scale(1); }
+        }
+
+        /* --- ORBIT SYSTEM --- */
+        .orbit-ring {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            z-index: 15;
+            /* Animation set inline for random speeds */
+        }
+
+        .orbit-item {
+            position: absolute;
+            top: 0; /* Pins item to top of the ring */
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 70px; /* Size of floating drawings */
+            height: 70px;
+        }
+
+        .orbit-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            /* Counter-rotate to keep image upright while ring spins */
+            animation: counter-spin linear infinite;
+        }
+
+        @keyframes spin {
+            from { transform: translate(-50%, -50%) rotate(0deg); }
+            to { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+
+        @keyframes counter-spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(-360deg); }
+        }
+
+        /* --- BOTTOM UI (INPUT) --- */
+        #ui-layer {
+            position: absolute;
+            bottom: 40px;
+            left: 0;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            z-index: 60;
+        }
+
+        .minimal-input-group {
+            width: 80%;
+            max-width: 320px;
+        }
+
+        .question-text {
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            letter-spacing: -0.5px;
+        }
+
+        .minimal-input {
+            width: 100%;
+            border: none;
+            border-bottom: 1px solid #000;
+            font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+            font-size: 16px;
+            padding: 10px 0;
+            background: transparent;
+            outline: none;
+            border-radius: 0; /* iOS fix */
+            margin-bottom: 20px;
+        }
+        
+        .minimal-input::placeholder {
+            color: #999;
+            font-weight: 300;
+        }
+
+        .submit-btn {
+            background: black;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+        
+        .submit-btn:disabled {
+            opacity: 0.5;
+        }
+
+        .back-text {
+            position: absolute;
+            top: 40px;
+            left: 30px;
+            font-size: 12px;
+            text-decoration: underline;
+            cursor: pointer;
+            z-index: 100;
+        }
+
+        /* --- MESSAGES OVERLAY (NEW) --- */
+        .read-btn {
+            margin-top: 15px;
+            font-size: 11px;
+            text-decoration: underline;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        #messages-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: white;
+            z-index: 200;
+            display: none; /* Hidden by default */
+            flex-direction: column;
+            padding: 80px 20px;
+            box-sizing: border-box;
+            overflow-y: auto;
+        }
+
+        #messages-overlay.open {
+            display: flex;
+        }
+
+        .close-messages {
+            position: absolute;
+            top: 40px;
+            right: 30px;
+            font-size: 24px;
+            cursor: pointer;
+            font-weight: 300;
+        }
+
+        .message-item {
+            border-bottom: 1px solid #eee;
+            padding: 20px 0;
+            font-size: 16px;
+            line-height: 1.5;
+            max-width: 600px;
+            margin: 0 auto;
+            width: 100%;
+            text-align: left;
+        }
+        
+        .message-time {
+            font-size: 10px;
+            color: #999;
+            margin-top: 5px;
+            text-transform: uppercase;
+        }
+
+        /* Hide Scrollbar */
+        ::-webkit-scrollbar {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- STATE WRAPPER -->
+    <div id="app-wrapper">
+
+        <!-- 1. LANDING PAGE -->
+        <div id="landing-view">
+            <!-- Updated to ./public/ for safety -->
+            <img id="landing-illustration" src="./public/cora1.png" alt="Surprise">
+            <div class="landing-text">Feliz Cumpleeee</div>
+        </div>
+
+        <!-- 2. MAIN PAGE -->
+        <div id="main-view">
+            <!-- Navigation -->
+            <div id="back-btn" class="back-text">BACK</div>
+
+            <!-- Central Pulsing Image -->
+            <img id="center-image" class="absolute-center" src="./public/cake1.png" alt="Center Piece">
+
+            <!-- Container for Orbit Rings -->
+            <div id="orbit-system-container"></div>
+
+            <!-- Bottom UI -->
+            <div id="ui-layer">
+                <div class="minimal-input-group">
+                    <div class="question-text">Feliz vuelta al sol mi Hil!<br>Qué agradeces hoy?</div>
+                    
+                    <form id="wish-form">
+                        <input type="text" id="wish-input" class="minimal-input" placeholder="Type here..." required autocomplete="off">
+                        <button type="submit" id="submit-btn" class="submit-btn">Save</button>
+                    </form>
+                    
+                    <!-- NEW READ BUTTON -->
+                    <div id="read-trigger" class="read-btn">Read Messages</div>
+                    
+                    <div id="success-msg" style="display:none; font-size: 12px; margin-top:10px;">Saved.</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. MESSAGES OVERLAY (NEW) -->
+        <div id="messages-overlay">
+            <div id="close-messages-btn" class="close-messages">×</div>
+            <div id="messages-list" class="w-full max-w-2xl mx-auto">
+                <!-- Messages injected here -->
+                <div class="text-center text-gray-400 text-sm mt-10">Loading thoughts...</div>
+            </div>
+        </div>
+
+    </div>
+
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
+        import { getAuth, signInAnonymously } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
+        // ADDED onSnapshot here
+        import { getFirestore, collection, addDoc, serverTimestamp, onSnapshot } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
+
+        try {
+            // --- CONFIGURATION ---
+            const ASSETS = {
+                // Orbit images still controlled by JS
+                orbit: [
+                    "./public/dog1.png", 
+                    "./public/dog2.png",
+                    "./public/dog3.png",
+                    "./public/cat1.png",
+                    "./public/dog4.png",
+                    "./public/dog5.png",
+                ]
+            };
+
+            // --- FIREBASE INIT ---
+            const hasInjectedConfig = typeof window.__firebase_config !== 'undefined' && window.__firebase_config;
+            
+            const firebaseConfig = hasInjectedConfig ? JSON.parse(window.__firebase_config) : {
+                apiKey: "dummy",
+                authDomain: "dummy.firebaseapp.com",
+                projectId: "dummy"
+            };
+            
+            const app = initializeApp(firebaseConfig);
+            const auth = getAuth(app);
+            const db = getFirestore(app);
+            
+            const appId = (typeof window.__app_id !== 'undefined') ? window.__app_id : 'default-birthday-app';
+
+            if (hasInjectedConfig) {
+                signInAnonymously(auth).then(() => {
+                    // Start listening for messages only after auth
+                    initMessagesListener();
+                }).catch((err) => {
+                    console.warn("Auth failed (expected if local/preview):", err);
+                });
+            } else {
+                console.log("Running in offline/demo mode (No Firebase Config detected)");
+            }
+
+            // --- ORBIT SYSTEM SETUP ---
+            function setupOrbitSystem() {
+                const container = document.getElementById('orbit-system-container');
+                if (!container) return;
+
+                const baseRadius = Math.min(window.innerWidth, window.innerHeight) * 0.25; // Base distance
+                
+                ASSETS.orbit.forEach((url, index) => {
+                    const ring = document.createElement('div');
+                    ring.className = 'orbit-ring';
+                    
+                    const variance = (Math.random() * 100) - 20; 
+                    const size = (baseRadius * 2) + (index * 40) + variance; 
+                    
+                    ring.style.width = `${size}px`;
+                    ring.style.height = `${size}px`;
+
+                    const duration = 20 + Math.random() * 30; 
+                    const direction = Math.random() > 0.5 ? 'normal' : 'reverse';
+                    ring.style.animation = `spin ${duration}s linear infinite ${direction}`;
+
+                    const item = document.createElement('div');
+                    item.className = 'orbit-item';
+
+                    const img = document.createElement('img');
+                    img.src = url;
+                    
+                    const counterDir = direction === 'normal' ? 'reverse' : 'normal';
+                    img.style.animation = `counter-spin ${duration}s linear infinite ${counterDir}`;
+
+                    item.appendChild(img);
+                    ring.appendChild(item);
+                    container.appendChild(ring);
+                });
+            }
+
+            // --- MESSAGES LOGIC (NEW) ---
+            function initMessagesListener() {
+                if (!auth.currentUser) return;
+                
+                const listContainer = document.getElementById('messages-list');
+                const messagesRef = collection(db, 'artifacts', appId, 'public', 'data', 'birthday_wishes');
+
+                // Real-time listener
+                onSnapshot(messagesRef, (snapshot) => {
+                    if (snapshot.empty) {
+                        listContainer.innerHTML = '<div class="text-center text-gray-400 text-sm mt-10">No wishes yet. Be the first!</div>';
+                        return;
+                    }
+
+                    // Sort in memory
+                    const messages = [];
+                    snapshot.forEach(doc => {
+                        messages.push({ id: doc.id, ...doc.data() });
+                    });
+
+                    // Sort by createdAt descending
+                    messages.sort((a, b) => {
+                        const tA = a.createdAt ? a.createdAt.seconds : 0;
+                        const tB = b.createdAt ? b.createdAt.seconds : 0;
+                        return tB - tA;
+                    });
+
+                    // Render
+                    listContainer.innerHTML = messages.map(msg => {
+                        const date = msg.createdAt ? new Date(msg.createdAt.seconds * 1000).toLocaleDateString() : '';
+                        const safeMsg = msg.message.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+                        
+                        return `
+                            <div class="message-item">
+                                <div>${safeMsg}</div>
+                                <div class="message-time">${date}</div>
+                            </div>
+                        `;
+                    }).join('');
+                }, (error) => {
+                    console.error("Error fetching messages:", error);
+                });
+            }
+
+            // --- INTERACTION LOGIC ---
+            const wrapper = document.getElementById('app-wrapper');
+            const landing = document.getElementById('landing-view');
+            const backBtn = document.getElementById('back-btn');
+            const form = document.getElementById('wish-form');
+            const input = document.getElementById('wish-input');
+            const submitBtn = document.getElementById('submit-btn');
+            const successMsg = document.getElementById('success-msg');
+            
+            // New Elements
+            const readBtn = document.getElementById('read-trigger');
+            const messagesOverlay = document.getElementById('messages-overlay');
+            const closeMessagesBtn = document.getElementById('close-messages-btn');
+
+            if (landing && wrapper) {
+                landing.addEventListener('click', () => {
+                    wrapper.classList.add('view-active');
+                });
+            }
+
+            if (backBtn && wrapper) {
+                backBtn.addEventListener('click', () => {
+                    wrapper.classList.remove('view-active');
+                });
+            }
+            
+            // Messages Toggle
+            if (readBtn && messagesOverlay) {
+                readBtn.addEventListener('click', () => {
+                    messagesOverlay.classList.add('open');
+                });
+            }
+            
+            if (closeMessagesBtn && messagesOverlay) {
+                closeMessagesBtn.addEventListener('click', () => {
+                    messagesOverlay.classList.remove('open');
+                });
+            }
+
+            // Form Submit
+            if (form) {
+                form.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const val = input.value.trim();
+                    if(!val) return;
+
+                    submitBtn.textContent = '...';
+                    submitBtn.disabled = true;
+
+                    try {
+                        if (auth.currentUser) {
+                            await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'birthday_wishes'), {
+                                message: val,
+                                createdAt: serverTimestamp(),
+                                uid: auth.currentUser.uid
+                            });
+                        } else {
+                            console.warn("User not authenticated, wish not saved to DB.");
+                            await new Promise(r => setTimeout(r, 500)); 
+                        }
+                        
+                        input.value = '';
+                        input.style.display = 'none';
+                        submitBtn.style.display = 'none';
+                        successMsg.style.display = 'block';
+                    } catch(err) {
+                        console.error("Error saving wish:", err);
+                        submitBtn.textContent = 'ERROR';
+                    }
+                });
+            }
+
+            // Init
+            setupOrbitSystem();
+
+        } catch (globalError) {
+            console.error("Critical script error:", globalError);
+        }
+    </script>
+</body>
+</html>
